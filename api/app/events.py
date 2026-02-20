@@ -2,7 +2,7 @@ import redis
 import json
 import logging
 import os
-from datatime import datetime, timezone
+from datetime import datetime, timezone
 from uuid import uuid4
 
 logger = logging.getLogger(__name__)
