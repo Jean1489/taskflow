@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: taskflow
+  labels:
+    app: taskflow
+    component: notification-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: notification-service
+  template:
+    metadata:
+      labels:
+        app: taskflow
+        component: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          image: yhcarlos14/taskflow-notification:v1.0.0
+          envFrom:
+            - configMapRef:
+                name: taskflow-config
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          livenessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "import redis, os; r = redis.Redis(host=os.environ.get('REDIS_HOST', 'localhost'), port=int(os.environ.get('REDIS_PORT', 6379))); r.ping()"
+            initialDelaySeconds: 15
+            periodSeconds: 20
