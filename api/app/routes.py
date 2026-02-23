@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 from datetime import datetime, timezone
@@ -31,10 +32,14 @@ def create_task(task: TaskCreate):
         "status": Status.pending,
         "category": task.category,
         "created_at": now,
-        "updated_at": task.due_date
+        "due_date": task.due_date
     }
     tasks_db[task_id] = new_task
-    publish_task_created(new_task) 
+    # Serialize for Redis — convert datetime and enums to strings
+    serializable_task = json.loads(
+        json.dumps(new_task, default=str)
+    )
+    publish_task_created(serializable_task) 
     return new_task
 
 

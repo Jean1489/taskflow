@@ -72,7 +72,7 @@ def publish_task_completed(task: dict) -> None:
 def _publish(channel: str, event: dict) -> None:
     try:
         client = get_redis_client()
-        client.publish(channel, json.dumps(event))
+        client.publish(channel, json.dumps(event, default=str))
         logger.info(f"Event published: {event['event_type']} - {event['event_id']}")
     except redis.exceptions.ConnectionError:
         logger.error("Could not connect to Redis - event not published")
