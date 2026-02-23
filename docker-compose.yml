@@ -67,6 +67,19 @@ services:
       redis:
         condition: service_healthy
 
+  # Frontend — Nginx static server
+  frontend:
+    image: nginx:alpine
+    container_name: taskflow-frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    networks:
+      - taskflow-network
+    depends_on:
+      - api
+
 # ----------------------------
 # Volumes
 # ----------------------------
