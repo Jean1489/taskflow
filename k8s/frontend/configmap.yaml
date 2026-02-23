@@ -1,0 +1,230 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: taskflow
+  labels:
+    app: taskflow
+    component: frontend
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>TaskFlow</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 2rem; }
+            header { text-align: center; margin-bottom: 2rem; }
+            header h1 { font-size: 2rem; color: #38bdf8; letter-spacing: 2px; }
+            header p { color: #64748b; margin-top: 0.5rem; }
+            .container { max-width: 900px; margin: 0 auto; }
+            .card { background: #1e293b; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #334155; }
+            .card h2 { font-size: 1rem; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; }
+            .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+            .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+            .form-group.full-width { grid-column: 1 / -1; }
+            label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+            input, select, textarea { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 0.6rem 0.8rem; color: #e2e8f0; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+            input:focus, select:focus, textarea:focus { border-color: #38bdf8; }
+            textarea { resize: vertical; min-height: 80px; }
+            .btn { padding: 0.7rem 1.5rem; border-radius: 8px; border: none; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: opacity 0.2s; }
+            .btn:hover { opacity: 0.85; }
+            .btn-primary { background: #38bdf8; color: #0f172a; width: 100%; margin-top: 1rem; }
+            .btn-search { background: #6366f1; color: white; }
+            .filters { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
+            .filters .form-group { flex: 1; min-width: 150px; }
+            .tasks-list { display: flex; flex-direction: column; gap: 0.8rem; }
+            .task-item { background: #0f172a; border-radius: 8px; padding: 1rem; border-left: 4px solid #334155; display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: start; }
+            .task-item.priority-high { border-left-color: #ef4444; }
+            .task-item.priority-medium { border-left-color: #f59e0b; }
+            .task-item.priority-low { border-left-color: #22c55e; }
+            .task-title { font-weight: 600; color: #e2e8f0; margin-bottom: 0.3rem; }
+            .task-meta { font-size: 0.8rem; color: #64748b; display: flex; gap: 1rem; flex-wrap: wrap; }
+            .badge { padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+            .badge-pending { background: #1e3a5f; color: #38bdf8; }
+            .badge-in_progress { background: #3b1f6e; color: #a78bfa; }
+            .badge-completed { background: #14532d; color: #22c55e; }
+            .task-actions { display: flex; gap: 0.5rem; }
+            .btn-complete { background: #14532d; color: #22c55e; padding: 0.3rem 0.8rem; font-size: 0.8rem; }
+            .btn-delete { background: #450a0a; color: #ef4444; padding: 0.3rem 0.8rem; font-size: 0.8rem; }
+            .empty-state { text-align: center; color: #64748b; padding: 2rem; }
+            .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 0.8rem 1.2rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600; opacity: 0; transition: opacity 0.3s; z-index: 1000; }
+            .toast.show { opacity: 1; }
+            .toast.success { background: #14532d; color: #22c55e; }
+            .toast.error { background: #450a0a; color: #ef4444; }
+        </style>
+    </head>
+    <body>
+    <header>
+        <h1>⚡ TaskFlow</h1>
+        <p>Event-driven task management</p>
+    </header>
+    <div class="container">
+        <div class="card">
+            <h2>Create Task</h2>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label>Title *</label>
+                    <input type="text" id="title" placeholder="Task title">
+                </div>
+                <div class="form-group full-width">
+                    <label>Description</label>
+                    <textarea id="description" placeholder="Task description (optional)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select id="priority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="category">
+                        <option value="personal">Personal</option>
+                        <option value="work">Work</option>
+                        <option value="study">Study</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label>Due Date</label>
+                    <input type="datetime-local" id="due_date">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="createTask()">Create Task</button>
+        </div>
+        <div class="card">
+            <h2>Search Tasks</h2>
+            <div class="filters">
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="filter-status">
+                        <option value="">All</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select id="filter-priority">
+                        <option value="">All</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="filter-category">
+                        <option value="">All</option>
+                        <option value="personal">Personal</option>
+                        <option value="work">Work</option>
+                        <option value="study">Study</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <button class="btn btn-search" onclick="loadTasks()">Search</button>
+            </div>
+        </div>
+        <div class="card">
+            <h2>Tasks</h2>
+            <div class="tasks-list" id="tasks-list">
+                <div class="empty-state">No tasks found. Create one above.</div>
+            </div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script>
+        const API_URL = "API_URL_PLACEHOLDER";
+        async function createTask() {
+            const title = document.getElementById("title").value.trim();
+            if (!title) { showToast("Title is required", "error"); return; }
+            const due_date = document.getElementById("due_date").value;
+            const body = {
+                title,
+                description: document.getElementById("description").value.trim() || null,
+                priority: document.getElementById("priority").value,
+                category: document.getElementById("category").value,
+                due_date: due_date ? new Date(due_date).toISOString() : null
+            };
+            try {
+                const response = await fetch(`${API_URL}/tasks/`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+                if (!response.ok) throw new Error("Failed to create task");
+                showToast("Task created successfully", "success");
+                clearForm();
+                loadTasks();
+            } catch (error) { showToast("Error creating task", "error"); }
+        }
+        async function loadTasks() {
+            const status = document.getElementById("filter-status").value;
+            const priority = document.getElementById("filter-priority").value;
+            const category = document.getElementById("filter-category").value;
+            let url = `${API_URL}/tasks/?`;
+            if (status) url += `status=${status}&`;
+            if (priority) url += `priority=${priority}&`;
+            if (category) url += `category=${category}&`;
+            try {
+                const response = await fetch(url);
+                const tasks = await response.json();
+                renderTasks(tasks);
+            } catch (error) { showToast("Error loading tasks", "error"); }
+        }
+        async function completeTask(taskId) {
+            try {
+                const response = await fetch(`${API_URL}/tasks/${taskId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "completed" }) });
+                if (!response.ok) throw new Error("Failed to update task");
+                showToast("Task completed", "success");
+                loadTasks();
+            } catch (error) { showToast("Error completing task", "error"); }
+        }
+        async function deleteTask(taskId) {
+            try {
+                const response = await fetch(`${API_URL}/tasks/${taskId}`, { method: "DELETE" });
+                if (!response.ok) throw new Error("Failed to delete task");
+                showToast("Task deleted", "success");
+                loadTasks();
+            } catch (error) { showToast("Error deleting task", "error"); }
+        }
+        function renderTasks(tasks) {
+            const container = document.getElementById("tasks-list");
+            if (!tasks.length) { container.innerHTML = '<div class="empty-state">No tasks found.</div>'; return; }
+            container.innerHTML = tasks.map(task => `
+                <div class="task-item priority-${task.priority}">
+                    <div>
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-meta">
+                            <span>${task.category}</span>
+                            <span>${task.due_date ? new Date(task.due_date).toLocaleDateString() : "No due date"}</span>
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        <span class="badge badge-${task.status}">${task.status.replace("_", " ")}</span>
+                        ${task.status !== "completed" ? `<button class="btn btn-complete" onclick="completeTask('${task.id}')">✓</button>` : ""}
+                        <button class="btn btn-delete" onclick="deleteTask('${task.id}')">✕</button>
+                    </div>
+                </div>
+            `).join("");
+        }
+        function clearForm() {
+            document.getElementById("title").value = "";
+            document.getElementById("description").value = "";
+            document.getElementById("due_date").value = "";
+            document.getElementById("priority").value = "medium";
+            document.getElementById("category").value = "other";
+        }
+        function showToast(message, type) {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.className = "toast", 3000);
+        }
+        loadTasks();
+    </script>
+    </body>
+    </html>
