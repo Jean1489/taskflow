@@ -11,7 +11,8 @@ networks:
 # Services
 # ----------------------------
 services:
-  #Redis - Message Broker
+
+  # Redis — Message broker
   redis:
     image: redis:7.2-alpine
     container_name: taskflow-redis
@@ -27,13 +28,14 @@ services:
     volumes:
       - redis-data:/data
 
-  #API - FastAPI Application
+  # API — FastAPI
   api:
     build:
       context: ./api
       dockerfile: Dockerfile
     container_name: taskflow-api
-    ports: -"8080:8080"
+    ports:
+      - "8080:8080"
     networks:
       - taskflow-network
     environment:
@@ -47,10 +49,10 @@ services:
     healthcheck:
       test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" ]
       interval: 30s
-      timeout: 5s
+      timeout: 10s
       retries: 3
 
-  #Notification Service
+  # Notification Service
   notification-service:
     build:
       context: ./notification-service
@@ -60,7 +62,7 @@ services:
       - taskflow-network
     environment:
       - REDIS_HOST=redis
-      - REDIS_PORT = 6379
+      - REDIS_PORT=6379
     depends_on:
       redis:
         condition: service_healthy
