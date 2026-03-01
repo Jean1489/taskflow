@@ -141,7 +141,7 @@ data:
     </div>
     <div class="toast" id="toast"></div>
     <script>
-        const API_URL = "API_URL_PLACEHOLDER";
+        const API_URL = "http://127.0.0.1:54092";
         async function createTask() {
             const title = document.getElementById("title").value.trim();
             if (!title) { showToast("Title is required", "error"); return; }
