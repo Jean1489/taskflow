@@ -1,80 +1,89 @@
+from sqlalchemy import Column, String, DateTime, Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import UUID
 from pydantic import BaseModel, Field
-from datetime import datetime
 from typing import Optional
-from enum import Enum
+from datetime import datetime, timezone
+from uuid import uuid4
+import enum
 import uuid
 
+from app.database import Base
 
 # ----------------------------
-# Enums — valores permitidos
+# Enums
 # ----------------------------
 
+class Priority(str, enum.Enum):
+    low = "low"
+    medium = "medium"
+    high = "high"
 
-class Priority(str, Enum):
-    low = 'low'
-    medium = 'medium'
-    high = 'high'
+class Status(str, enum.Enum):
+    pending = "pending"
+    in_progress = "in_progress"
+    completed = "completed"
 
-class Status(str, Enum):
-    pending = 'pending'
-    in_progress = 'in_progress'
-    completed = 'completed'
-
-class Category(str, Enum):
-    work = 'work'
-    personal = 'personal'
-    shopping = 'shopping'
-    others = 'others'
-
+class Category(str, enum.Enum):
+    personal = "personal"
+    work = "work"
+    study = "study"
+    other = "other"
 
 # ----------------------------
-# TaskCreate — input del usuario
+# SQLAlchemy Model — DB table
+# ----------------------------
+
+class TaskDB(Base):
+    __tablename__ = "tasks"
+
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    title         = Column(String(100), nullable=False)
+    description   = Column(String(500), nullable=True)
+    priority      = Column(SQLEnum(Priority), nullable=False, default=Priority.medium)
+    status        = Column(SQLEnum(Status), nullable=False, default=Status.pending)
+    category      = Column(SQLEnum(Category), nullable=False, default=Category.other)
+    due_date      = Column(DateTime(timezone=True), nullable=True)
+    created_at    = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+# ----------------------------
+# Pydantic Models — API contract
 # ----------------------------
 
 class TaskCreate(BaseModel):
-    title: str = Field(..., min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
-    priority: Priority = Field(default=Priority.medium)
-    category: Category = Field(default=Category.others)
-    due_date: Optional[datetime] = None
+    title:       str            = Field(..., min_length=1, max_length=100)
+    description: Optional[str]  = Field(None, max_length=500)
+    priority:    Priority       = Priority.medium
+    category:    Category       = Category.other
+    due_date:    Optional[datetime] = None
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
-                "title": "Comprar leche",
-                "description": "Ir al supermercado y comprar leche",
+                "title": "Complete project documentation",
+                "description": "Write the README and API docs",
                 "priority": "high",
-                "category": "shopping",
-                "due_date": "2024-07-01T12:00:00"
+                "category": "work",
+                "due_date": "2026-03-01T10:00:00"
             }
         }
-
-# ----------------------------
-# TaskUpdate — actualización parcial
-# ----------------------------
+    }
 
 class TaskUpdate(BaseModel):
-    title: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
-    priority: Optional[Priority] = None
-    category: Optional[Category] = None
-    status: Optional[Status] = None
-    due_date: Optional[datetime] = None
+    title:       Optional[str]      = Field(None, min_length=1, max_length=100)
+    description: Optional[str]      = Field(None, max_length=500)
+    priority:    Optional[Priority] = None
+    status:      Optional[Status]   = None
+    category:    Optional[Category] = None
+    due_date:    Optional[datetime] = None
 
+class TaskResponse(BaseModel):
+    id:          uuid.UUID
+    title:       str
+    description: Optional[str]
+    priority:    Priority
+    status:      Status
+    category:    Category
+    due_date:    Optional[datetime]
+    created_at:  datetime
 
-# ----------------------------
-# TaskResponse — output al usuario
-# ----------------------------
-
-class TaskResponde(BaseModel):
-   id: str
-   title: str
-   description: Optional[str]
-   priority: Priority
-   category: Category
-   status: Status
-   due_date: Optional[datetime]
-   created_at: datetime
-
-   class Config:
-       from_attributes = True
+    model_config = {"from_attributes": True}
