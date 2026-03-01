@@ -28,6 +28,26 @@ services:
     volumes:
       - redis-data:/data
 
+  #PostgreSQL — Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: taskflow-postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - taskflow-network
+    environment:
+      - POSTGRES_USER: taskflow
+      - POSTGRES_PASSWORD: taskflow123
+      - POSTGRES_DB: taskflow
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U taskflow" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
   # API — FastAPI
   api:
     build:
@@ -43,8 +63,11 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - PORT=8080
+      - DATABASE_URL=postgresql+asyncpg://taskflow:taskflow123@postgres:5432/taskflow
     depends_on:
       redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" ]
@@ -85,3 +108,4 @@ services:
 # ----------------------------
 volumes:
   redis-data:
+  postgres-data:
