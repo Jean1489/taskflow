@@ -37,9 +37,9 @@ services:
     networks:
       - taskflow-network
     environment:
-      - POSTGRES_USER: taskflow
-      - POSTGRES_PASSWORD: taskflow123
-      - POSTGRES_DB: taskflow
+      POSTGRES_USER: taskflow
+      POSTGRES_PASSWORD: taskflow123
+      POSTGRES_DB: taskflow
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U taskflow" ]
       interval: 10s
