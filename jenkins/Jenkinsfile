@@ -44,16 +44,12 @@ pipeline {
             }
         }
 
-        stage('Debug') {
-            steps {
-                sh "echo 'GIT_BRANCH=${env.GIT_BRANCH}'"
-                sh "echo 'BRANCH_NAME=${env.BRANCH_NAME}'"
-            }
-        }
 
         stage('Update Manifests') {
             when {
-                branch 'main'
+                expression {
+                    return env.GIT_BRANCH == 'origin/main'
+                }
             }
             steps {
                 withCredentials([usernamePassword(
