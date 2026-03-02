@@ -1,0 +1,83 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_USER     = "yhcarlos14"
+        API_IMAGE       = "${DOCKER_USER}/taskflow-api"
+        NOTIF_IMAGE     = "${DOCKER_USER}/taskflow-notification"
+        IMAGE_TAG       = "${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build API Image') {
+            steps {
+                sh "docker build -t ${API_IMAGE}:${IMAGE_TAG} ./api"
+            }
+        }
+
+        stage('Build Notification Image') {
+            steps {
+                sh "docker build -t ${NOTIF_IMAGE}:${IMAGE_TAG} ./notification-service"
+            }
+        }
+
+        stage('Push Images') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub-credentials',
+                    usernameVariable: 'DOCKER_USERNAME',
+                    passwordVariable: 'DOCKER_PASSWORD'
+                )]) {
+                    sh """
+                        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                        docker push ${API_IMAGE}:${IMAGE_TAG}
+                        docker push ${NOTIF_IMAGE}:${IMAGE_TAG}
+                    """
+                }
+            }
+        }
+
+        stage('Update Manifests') {
+            when {
+                branch 'main'
+            }
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'github-credentials',
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_PASS'
+                )]) {
+                    sh """
+                        sed -i 's|image: ${API_IMAGE}:.*|image: ${API_IMAGE}:${IMAGE_TAG}|' k8s/api/deployment.yaml
+                        sed -i 's|image: ${NOTIF_IMAGE}:.*|image: ${NOTIF_IMAGE}:${IMAGE_TAG}|' k8s/notification-service/deployment.yaml
+                        git config user.email "jenkins@taskflow.com"
+                        git config user.name "Jenkins"
+                        git add k8s/api/deployment.yaml k8s/notification-service/deployment.yaml
+                        git commit -m "ci: update images to build ${IMAGE_TAG}"
+                        git push https://$GIT_USER:$GIT_PASS@github.com/yhcarlos14/taskflow main
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline completed — images pushed with tag ${IMAGE_TAG}"
+        }
+        failure {
+            echo "Pipeline failed — check logs above"
+        }
+        always {
+            sh "docker logout"
+            cleanWs()
+        }
+    }
+}
