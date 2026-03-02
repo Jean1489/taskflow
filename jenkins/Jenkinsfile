@@ -47,25 +47,32 @@ pipeline {
         stage('Update Manifests') {
             when {
                 expression {
-                    return env.GIT_BRANCH == 'origin/main' || env.GIT_BRANCH == 'main'
+                    sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim() == 'main'
                 }
             }
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'github-credentials',
-                    usernameVariable: 'GIT_USER',
-                    passwordVariable: 'GIT_PASS'
-                )]) {
-                    sh """
-                        sed -i 's|image: ${API_IMAGE}:.*|image: ${API_IMAGE}:${IMAGE_TAG}|' k8s/api/deployment.yaml
-                        sed -i 's|image: ${NOTIF_IMAGE}:.*|image: ${NOTIF_IMAGE}:${IMAGE_TAG}|' k8s/notification-service/deployment.yaml
-                        git config user.email "jenkins@taskflow.com"
-                        git config user.name "Jenkins"
-                        git add k8s/api/deployment.yaml k8s/notification-service/deployment.yaml
-                        git commit -m "ci: update images to build ${IMAGE_TAG}"
-                        git push https://$GIT_USER:$GIT_PASS@github.com/yhcarlos14/taskflow main
-                    """
-                }
+                credentialsId: 'github-credentials',
+                usernameVariable: 'GIT_USER',
+                passwordVariable: 'GIT_PASS'
+            )]) {
+                sh '''
+                    # Asegurar que estamos en main (no detached HEAD)
+                    git fetch origin main
+                    git checkout -B main origin/main
+
+                    sed -i "s|image: ${API_IMAGE}:.*|image: ${API_IMAGE}:${IMAGE_TAG}|" k8s/api/deployment.yaml
+                    sed -i "s|image: ${NOTIF_IMAGE}:.*|image: ${NOTIF_IMAGE}:${IMAGE_TAG}|" k8s/notification-service/deployment.yaml
+
+                    git config user.email "jenkins@taskflow.com"
+                    git config user.name "Jenkins"
+
+                    git add k8s/api/deployment.yaml k8s/notification-service/deployment.yaml
+                    git diff --quiet || git commit -m "ci: update images to build ${IMAGE_TAG}"
+
+                    git push https://$GIT_USER:$GIT_PASS@github.com/yhcarlos14/taskflow main
+                '''
+            }
             }
         }
     }
