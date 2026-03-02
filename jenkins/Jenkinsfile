@@ -46,8 +46,7 @@ pipeline {
 
         stage('Update Manifests') {
             when {
-                expression {
-                    sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim() == 'main'
+                branch 'main'
                 }
             }
             steps {
