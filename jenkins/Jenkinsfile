@@ -65,7 +65,7 @@ pipeline {
                         git checkout -B main
                         git add k8s/api/deployment.yaml k8s/notification-service/deployment.yaml
                         git commit -m "ci: update images to build ${IMAGE_TAG}"
-                        git push https://\$GIT_USER:\$GIT_PASS@github.com/yhcarlos14/taskflow main
+                        git push https://\$GIT_USER:\$GIT_PASS@github.com/Jean1489/taskflow main
                     """
                 }
             }
