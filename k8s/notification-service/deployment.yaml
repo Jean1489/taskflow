@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: notification-service
-          image: yhcarlos14/taskflow-notification:v1.0.0
+          image: yhcarlos14/taskflow-notification:13
           envFrom:
             - configMapRef:
                 name: taskflow-config

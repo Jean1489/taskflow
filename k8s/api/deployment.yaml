@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: yhcarlos14/taskflow-api:v1.0.0
+          image: yhcarlos14/taskflow-api:13
           ports:
             - containerPort: 8080
           envFrom:
